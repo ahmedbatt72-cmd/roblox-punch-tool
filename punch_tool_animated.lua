@@ -1,5 +1,5 @@
 -- Guest 1337 Punch (Animated Version with Lunge and Hitbox)
--- Roblox 2014-style Tool script with animations
+-- Roblox 2014-style Tool script
 
 local tool = script.Parent
 local handle = tool:FindFirstChild("Handle")
@@ -14,8 +14,6 @@ local COOLDOWN = 0.70
 local LUNGE_SPEED = 100
 local LUNGE_TIME = 0.25
 
-local punchAnimation = nil
-local animationTrack = nil
 local hitbox = nil
 
 -- Create hitbox as SelectionBox
@@ -26,9 +24,10 @@ local function createHitbox()
 	
 	hitbox = Instance.new("SelectionBox")
 	hitbox.Adornee = handle
-	hitbox.Color3 = Color3.new(1, 0, 0) -- Red
+	hitbox.Color = BrickColor.new("Really red")
 	hitbox.LineThickness = 0.1
 	hitbox.Parent = handle
+	hitbox.Visible = false
 end
 
 -- Show hitbox during attack
@@ -54,7 +53,8 @@ local function lungePunch(character)
 	
 	local startCFrame = humanoidRootPart.CFrame
 	local direction = humanoidRootPart.CFrame.lookVector
-	local endCFrame = startCFrame + direction * LUNGE_SPEED * LUNGE_TIME
+	local lungeDistance = LUNGE_SPEED * LUNGE_TIME
+	local endCFrame = startCFrame + direction * lungeDistance
 	
 	local startTime = tick()
 	
@@ -62,47 +62,21 @@ local function lungePunch(character)
 		local elapsed = tick() - startTime
 		local progress = elapsed / LUNGE_TIME
 		
-		-- Linear interpolation of CFrame
-		humanoidRootPart.CFrame = startCFrame:lerp(endCFrame, progress)
+		-- Manual CFrame interpolation for position
+		local newX = startCFrame.x + (endCFrame.x - startCFrame.x) * progress
+		local newY = startCFrame.y + (endCFrame.y - startCFrame.y) * progress
+		local newZ = startCFrame.z + (endCFrame.z - startCFrame.z) * progress
+		
+		humanoidRootPart.CFrame = CFrame.new(newX, newY, newZ) * startCFrame.rotation
 		
 		wait()
 	end
-end
-
--- Initialize animations
-local function setupAnimations()
-	local character = tool.Parent
-	if not character then return end
-	
-	local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-	if not humanoidRootPart then return end
-	
-	-- Create or get Animator
-	local humanoid = character:FindFirstChild("Humanoid")
-	if not humanoid then return end
-	
-	local animator = humanoid:FindFirstChild("Animator")
-	if not animator then
-		animator = Instance.new("Animator")
-		animator.Parent = humanoid
-	end
-end
-
--- Play punch animation
-local function playPunchAnimation()
-	-- Animation playback would go here if using AnimationTrack
-end
-
--- Stop punch animation
-local function stopPunchAnimation()
-	-- Animation stop would go here
 end
 
 if handle then
 
 	-- Create hitbox on load
 	createHitbox()
-	hideHitbox()
 
 	handle.Touched:connect(function(part)
 
@@ -135,7 +109,6 @@ if handle then
 		end
 	end)
 
-
 	tool.Activated:connect(function()
 
 		if coolingDown == true then
@@ -148,9 +121,6 @@ if handle then
 
 		-- Show hitbox
 		showHitbox()
-
-		-- Play the punch animation
-		playPunchAnimation()
 
 		-- Start lunge
 		local character = tool.Parent
@@ -174,15 +144,10 @@ if handle then
 		coolingDown = false
 	end)
 
-	-- Setup animations when tool is equipped
-	tool.Equipped:connect(function()
-		setupAnimations()
-	end)
-
 	-- Cleanup when tool is unequipped
 	tool.Unequipped:connect(function()
-		stopPunchAnimation()
 		hideHitbox()
+		attacking = false
 	end)
 
 end
